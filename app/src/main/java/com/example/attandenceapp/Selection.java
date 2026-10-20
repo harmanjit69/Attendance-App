@@ -19,12 +19,15 @@ public class Selection extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_selection);
+
         ThemeManager.applyTheme(this);
+
         Button b1 = findViewById(R.id.b1);
         Button b2 = findViewById(R.id.b2);
 
         String cookies = getIntent().getStringExtra("cookies");
-        Log.d("SELECTION_COOKIES",cookies);
+        Log.d("SELECTION_COOKIES", cookies == null ? "null" : cookies);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -48,6 +51,5 @@ public class Selection extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
     }
 }

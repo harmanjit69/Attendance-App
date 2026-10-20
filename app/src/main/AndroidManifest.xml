@@ -2,29 +2,35 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- Only needed for Android 9 and below -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
     <application
+        android:name=".AttendanceApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/appicon"
         android:label="@string/app_name"
         android:roundIcon="@drawable/appicon"
-
         android:supportsRtl="true"
         android:theme="@style/Theme.AttandenceApp"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:targetApi="31">
+
         <activity
             android:name=".TimeTable"
             android:exported="false" />
+
         <activity
             android:name=".AboutMe"
             android:exported="false" />
@@ -42,12 +48,15 @@
         <activity
             android:name=".Assignment"
             android:exported="false" />
+
         <activity
             android:name=".Attendence"
             android:exported="false" />
+
         <activity
             android:name=".Selection"
             android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -57,6 +66,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

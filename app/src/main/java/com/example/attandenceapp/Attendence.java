@@ -25,17 +25,20 @@ import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class Attendence extends AppCompatActivity {
 
     private LinearLayout container;
     private ScrollView scrollView;
     private TextView loadingText;
+
     private String cookies;
     private SharedPreferences prefs;
 
     private final List<String> updatedSubjects = new ArrayList<>();
-    private int totalSubjects = 0;
+
+    private volatile int totalSubjects = 0;
     private int loadedSubjects = 0;
     private boolean updateBannerShown = false;
 
@@ -45,7 +48,6 @@ public class Attendence extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_attendence);
 
-        // Global light/dark floating button
         ThemeManager.applyTheme(this);
 
         container = findViewById(R.id.container);
@@ -54,7 +56,6 @@ public class Attendence extends AppCompatActivity {
 
         prefs = getSharedPreferences("attendance_data", MODE_PRIVATE);
 
-        // Get cookies passed from Selection
         cookies = getIntent().getStringExtra("cookies");
         Log.d("ATT_COOKIES", cookies == null ? "null" : cookies);
 
@@ -84,12 +85,14 @@ public class Attendence extends AppCompatActivity {
     }
 
     private void fetchDashboard() {
+
         new Thread(() -> {
             java.net.HttpURLConnection conn = null;
             java.io.BufferedReader reader = null;
 
             try {
                 java.net.URL url = new java.net.URL("https://agclms.in/DashBoardStudent");
+
                 conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0");
@@ -104,21 +107,25 @@ public class Attendence extends AppCompatActivity {
 
                 StringBuilder html = new StringBuilder();
                 String line;
+
                 while ((line = reader.readLine()) != null) {
                     html.append(line);
                 }
 
                 String dashboardHtml = html.toString();
 
-                // Save dashboard HTML cache AFTER reading it
                 prefs.edit()
                         .putString("cache_dash_html", dashboardHtml)
                         .apply();
 
-                Log.d("DASHBOARD_HTML", dashboardHtml.substring(0, Math.min(500, dashboardHtml.length())));
+                Log.d(
+                        "DASHBOARD_HTML",
+                        dashboardHtml.substring(0, Math.min(500, dashboardHtml.length()))
+                );
 
                 Document doc = Jsoup.parse(dashboardHtml);
                 Elements attLinks = doc.select("a[href*=AttendanceReport]");
+
                 Log.d("ATT_LINKS", "Found: " + attLinks.size());
 
                 List<String[]> subjects = new ArrayList<>();
@@ -128,6 +135,7 @@ public class Attendence extends AppCompatActivity {
                     Element td = parentRow != null ? parentRow.select("td").first() : null;
 
                     String subjectName = td != null ? td.text().trim() : "Unknown";
+
                     if (subjectName.isEmpty()) {
                         subjectName = "Unknown";
                     }
@@ -143,8 +151,8 @@ public class Attendence extends AppCompatActivity {
                         attUrl = "https://agclms.in/" + href;
                     }
 
-                    // Avoid duplicate subject entries
                     boolean exists = false;
+
                     for (String[] existing : subjects) {
                         if (existing[0].equals(subjectName)) {
                             exists = true;
@@ -158,10 +166,8 @@ public class Attendence extends AppCompatActivity {
                     }
                 }
 
-                // Sort alphabetically
                 subjects.sort((a, b) -> a[0].compareTo(b[0]));
 
-                // IMPORTANT: set totalSubjects BEFORE starting threads
                 totalSubjects = subjects.size();
                 loadedSubjects = 0;
                 updateBannerShown = false;
@@ -178,10 +184,16 @@ public class Attendence extends AppCompatActivity {
 
             } catch (Exception e) {
                 Log.e("DASHBOARD_ERROR", e.toString());
-                runOnUiThread(() -> loadingText.setText("Unable to load attendance. Check internet/login."));
+
+                runOnUiThread(() -> loadingText.setText(
+                        "Unable to load attendance. Check internet/login."
+                ));
+
             } finally {
                 try {
-                    if (reader != null) reader.close();
+                    if (reader != null) {
+                        reader.close();
+                    }
                 } catch (Exception ignored) {
                 }
 
@@ -193,12 +205,14 @@ public class Attendence extends AppCompatActivity {
     }
 
     private void fetchAttendance(String subjectName, String attUrl) {
+
         new Thread(() -> {
             java.net.HttpURLConnection conn = null;
             java.io.BufferedReader reader = null;
 
             try {
                 java.net.URL url = new java.net.URL(attUrl);
+
                 conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0");
@@ -213,14 +227,15 @@ public class Attendence extends AppCompatActivity {
 
                 StringBuilder html = new StringBuilder();
                 String line;
+
                 while ((line = reader.readLine()) != null) {
                     html.append(line);
                 }
 
                 String pageHtml = html.toString();
 
-                // Save subject attendance HTML cache AFTER reading it
                 String key = getSubjectKey(subjectName);
+
                 prefs.edit()
                         .putString("cache_att_" + key, pageHtml)
                         .apply();
@@ -243,9 +258,12 @@ public class Attendence extends AppCompatActivity {
                         scrollView.setVisibility(View.VISIBLE);
                     }
                 });
+
             } finally {
                 try {
-                    if (reader != null) reader.close();
+                    if (reader != null) {
+                        reader.close();
+                    }
                 } catch (Exception ignored) {
                 }
 
@@ -257,6 +275,7 @@ public class Attendence extends AppCompatActivity {
     }
 
     private void parseAttendance(String subjectName, String pageHtml, boolean offline) {
+
         try {
             Document doc = Jsoup.parse(pageHtml);
             Elements tables = doc.select("table");
@@ -268,7 +287,7 @@ public class Attendence extends AppCompatActivity {
             boolean hasTutorial = false;
 
             for (Element table : tables) {
-                String header = table.select("th").text().toLowerCase();
+                String header = table.select("th").text().toLowerCase(Locale.getDefault());
                 boolean isTutorial = header.contains("tutorial");
 
                 Elements rows = table.select("tr");
@@ -277,7 +296,7 @@ public class Attendence extends AppCompatActivity {
                     Elements cols = row.select("td");
 
                     if (cols.size() >= 2) {
-                        String status = cols.get(1).text().trim().toUpperCase();
+                        String status = cols.get(1).text().trim().toUpperCase(Locale.getDefault());
 
                         if (isTutorial) {
                             hasTutorial = true;
@@ -304,9 +323,12 @@ public class Attendence extends AppCompatActivity {
             final int finalTA = tutorialAbsent;
             final boolean finalHasTutorial = hasTutorial;
 
-            Log.d("ATT_DATA", subjectName +
-                    " L:" + finalLP + "/" + (finalLP + finalLA) +
-                    " T:" + finalTP + "/" + (finalTP + finalTA));
+            Log.d(
+                    "ATT_DATA",
+                    subjectName +
+                            " L:" + finalLP + "/" + (finalLP + finalLA) +
+                            " T:" + finalTP + "/" + (finalTP + finalTA)
+            );
 
             runOnUiThread(() -> addSubjectCard(
                     subjectName,
@@ -355,6 +377,7 @@ public class Attendence extends AppCompatActivity {
             Element td = parentRow != null ? parentRow.select("td").first() : null;
 
             String subjectName = td != null ? td.text().trim() : "Unknown";
+
             if (subjectName.isEmpty()) {
                 subjectName = "Unknown";
             }
@@ -400,14 +423,15 @@ public class Attendence extends AppCompatActivity {
         banner.setOrientation(LinearLayout.HORIZONTAL);
 
         boolean dark = isDarkMode();
-        banner.setBackgroundColor(dark ? 0xFF332700 : 0xFFFFF3CD);
 
+        banner.setBackgroundColor(dark ? 0xFF332700 : 0xFFFFF3CD);
         banner.setPadding(32, 24, 32, 24);
 
         LinearLayout.LayoutParams bannerParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
+
         bannerParams.setMargins(0, 0, 0, 24);
         banner.setLayoutParams(bannerParams);
 
@@ -442,13 +466,12 @@ public class Attendence extends AppCompatActivity {
 
         String key = getSubjectKey(subjectName);
 
-        // Only check updates and save fresh stats when online
         if (!offline) {
             int savedPresent = prefs.getInt(key + "_present", -1);
             int savedTotal = prefs.getInt(key + "_total", -1);
 
             if (savedPresent != -1 && (savedPresent != totalPresent || savedTotal != total)) {
-                updatedSubjects.add(subjectName.toUpperCase());
+                updatedSubjects.add(subjectName.toUpperCase(Locale.getDefault()));
             }
 
             prefs.edit()
@@ -464,11 +487,12 @@ public class Attendence extends AppCompatActivity {
             showUpdateBanner();
         }
 
-        String percentageStr = String.format("%.2f", pct) + "%";
+        String percentageStr = String.format(Locale.getDefault(), "%.2f", pct) + "%";
 
         boolean dark = isDarkMode();
 
         int cardColor;
+
         if (pct < 75) {
             cardColor = dark ? 0xFF4A2020 : 0xFFFFEBEE;
         } else if (pct <= 85) {
@@ -483,7 +507,6 @@ public class Attendence extends AppCompatActivity {
         int okColor = dark ? 0xFF4CAF50 : 0xFF2E7D32;
         int badColor = dark ? 0xFFF44336 : 0xFFC62828;
 
-        // Outer card
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setBackgroundColor(cardColor);
@@ -492,11 +515,11 @@ public class Attendence extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
+
         cardParams.setMargins(0, 0, 0, 20);
         card.setLayoutParams(cardParams);
         card.setPadding(40, 36, 40, 36);
 
-        // Subject name
         TextView nameView = new TextView(this);
         nameView.setText(subjectName);
         nameView.setTextColor(primaryText);
@@ -505,17 +528,17 @@ public class Attendence extends AppCompatActivity {
         nameView.setPadding(0, 0, 0, 16);
         card.addView(nameView);
 
-        // Lecture row
         int lectureTotal = lecturePresent + lectureAbsent;
+
         TextView lectureView = new TextView(this);
         lectureView.setText("Lecture    : " + lecturePresent + "/" + lectureTotal);
         lectureView.setTextColor(secondaryText);
         lectureView.setTextSize(15);
         card.addView(lectureView);
 
-        // Tutorial row, only if exists
         if (hasTutorial) {
             int tutorialTotal = tutorialPresent + tutorialAbsent;
+
             TextView tutorialView = new TextView(this);
             tutorialView.setText("Tutorial   : " + tutorialPresent + "/" + tutorialTotal);
             tutorialView.setTextColor(secondaryText);
@@ -523,7 +546,6 @@ public class Attendence extends AppCompatActivity {
             card.addView(tutorialView);
         }
 
-        // Total row
         TextView totalView = new TextView(this);
         totalView.setText("Total      : " + totalPresent + "/" + total);
         totalView.setTextColor(secondaryText);
@@ -531,7 +553,6 @@ public class Attendence extends AppCompatActivity {
         totalView.setPadding(0, 0, 0, 12);
         card.addView(totalView);
 
-        // Percentage
         TextView percentView = new TextView(this);
         percentView.setText("Percentage : " + percentageStr);
         percentView.setTextColor(primaryText);
@@ -540,8 +561,8 @@ public class Attendence extends AppCompatActivity {
         percentView.setPadding(0, 0, 0, 6);
         card.addView(percentView);
 
-        // Status
         boolean eligible = pct >= 75;
+
         TextView statusView = new TextView(this);
         statusView.setText("Status : " + (eligible ? "Eligible ✓" : "Not Eligible ✗"));
         statusView.setTextColor(eligible ? okColor : badColor);
@@ -549,7 +570,6 @@ public class Attendence extends AppCompatActivity {
         statusView.setPadding(0, 0, 0, 16);
         card.addView(statusView);
 
-        // Divider
         View divider = new View(this);
         divider.setBackgroundColor(dividerColor);
 
@@ -557,10 +577,10 @@ public class Attendence extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 2
         );
+
         divider.setLayoutParams(divParams);
         card.addView(divider);
 
-        // Smart insight
         TextView insightView = new TextView(this);
 
         if (eligible) {
@@ -610,6 +630,7 @@ public class Attendence extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
+
         bannerParams.setMargins(0, 0, 0, 24);
         banner.setLayoutParams(bannerParams);
 

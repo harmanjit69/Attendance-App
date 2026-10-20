@@ -1,9 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.AttandenceApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <style name="Base.Theme.AttandenceApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#FF1976D2</item>
+        <item name="colorPrimaryVariant">#FF0D47A1</item>
+        <item name="colorOnPrimary">#FFFFFFFF</item>
+
+        <item name="colorSecondary">#FF03DAC5</item>
+        <item name="colorSecondaryVariant">#FF018786</item>
+        <item name="colorOnSecondary">#FF000000</item>
+
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
     </style>
 
     <style name="Theme.AttandenceApp" parent="Base.Theme.AttandenceApp" />
+
 </resources>

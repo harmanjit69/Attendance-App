@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace = "com.example.attandenceapp"
+
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -29,6 +30,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -36,13 +38,19 @@ android {
 }
 
 dependencies {
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
     implementation("com.android.volley:volley:1.2.1")
     implementation("org.jsoup:jsoup:1.17.2")
+
+    // For background attendance update notifications
+    implementation("androidx.work:work-runtime:2.9.0")
 }

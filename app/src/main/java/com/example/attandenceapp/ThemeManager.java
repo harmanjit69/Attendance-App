@@ -6,36 +6,82 @@ import android.content.SharedPreferences;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+
 import androidx.appcompat.app.AppCompatDelegate;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class ThemeManager {
+
+    private static final String FAB_TAG = "theme_toggle_fab";
+
     public static void applyTheme(Activity activity) {
-        SharedPreferences prefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-        boolean isDark = prefs.getBoolean("is_dark_mode", false);
 
-        // Apply global theme
-        AppCompatDelegate.setDefaultNightMode(isDark ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+        ViewGroup rootView = activity.findViewById(android.R.id.content);
 
-        // Inject Floating Action Button (FAB)
-        ViewGroup contentView = activity.findViewById(android.R.id.content);
-        if (contentView instanceof FrameLayout) {
-            FloatingActionButton fab = new FloatingActionButton(activity);
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-            params.gravity = Gravity.BOTTOM | Gravity.END;
-            params.setMargins(16, 16, 32, 32);
-            fab.setLayoutParams(params);
-
-            // Use system icons (or replace with your own R.drawable.ic_sun / ic_moon)
-            fab.setImageResource(isDark ? android.R.drawable.ic_menu_view : android.R.drawable.ic_menu_edit);
-
-            fab.setOnClickListener(v -> {
-                prefs.edit().putBoolean("is_dark_mode", !isDark).apply();
-                activity.recreate(); // Refresh the activity to apply new theme
-            });
-            contentView.addView(fab);
+        if (rootView == null) {
+            return;
         }
+
+        if (rootView.findViewWithTag(FAB_TAG) != null) {
+            return;
+        }
+
+        if (!(rootView instanceof FrameLayout)) {
+            return;
+        }
+
+        final SharedPreferences prefs =
+                activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+
+        final boolean isDark = prefs.getBoolean("is_dark_mode", false);
+
+        FloatingActionButton fab = new FloatingActionButton(activity);
+
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+
+        params.gravity = Gravity.BOTTOM | Gravity.END;
+        params.setMargins(
+                dp(activity, 16),
+                dp(activity, 16),
+                dp(activity, 16),
+                dp(activity, 24)
+        );
+
+        fab.setLayoutParams(params);
+        fab.setTag(FAB_TAG);
+
+        if (isDark) {
+            fab.setImageResource(R.drawable.ic_sun);
+            fab.setContentDescription("Switch to light mode");
+        } else {
+            fab.setImageResource(R.drawable.ic_moon);
+            fab.setContentDescription("Switch to dark mode");
+        }
+
+        fab.setOnClickListener(v -> {
+            boolean newDarkMode = !isDark;
+
+            prefs.edit()
+                    .putBoolean("is_dark_mode", newDarkMode)
+                    .apply();
+
+            AppCompatDelegate.setDefaultNightMode(
+                    newDarkMode
+                            ? AppCompatDelegate.MODE_NIGHT_YES
+                            : AppCompatDelegate.MODE_NIGHT_NO
+            );
+
+            activity.recreate();
+        });
+
+        ((FrameLayout) rootView).addView(fab);
+    }
+
+    private static int dp(Context context, int value) {
+        return (int) (value * context.getResources().getDisplayMetrics().density);
     }
 }

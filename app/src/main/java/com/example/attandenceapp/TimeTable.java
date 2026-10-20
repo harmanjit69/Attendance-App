@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -15,84 +14,81 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 public class TimeTable extends AppCompatActivity {
-
     private ImageView imageViewButton;
-    private Button selectImageButton;
-
+    private Button selectImageButton, deleteImageButton;
     private SharedPreferences preferences;
-
     private ActivityResultLauncher<Intent> imagePickerlauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+        ThemeManager.applyTheme(this); // Feature 4
         setContentView(R.layout.activity_time_table);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        // ... (Keep your existing Insets code here) ...
+
         imageViewButton = findViewById(R.id.imageViewButton);
         selectImageButton = findViewById(R.id.selectImageButton);
+        deleteImageButton = findViewById(R.id.deleteImageButton);
         preferences = getSharedPreferences("timetable_data", MODE_PRIVATE);
 
         imagePickerlauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                 Uri imageUri = result.getData().getData();
-                if (imageUri != null){
-
-                    try {
-                        int takeFlags = result.getData().getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
-                        getContentResolver().takePersistableUriPermission(imageUri,
-                                takeFlags);
-
-                        imageViewButton.setImageURI(imageUri);
-
-                        preferences.edit().putString("image_uri", imageUri.toString()).apply();
-
-                        Toast.makeText(TimeTable.this, "Photo Changed", Toast.LENGTH_SHORT).show();
-
-
-                    } catch
-                    (Exception e){
-                        Toast.makeText(TimeTable.this, "Error" + e.getMessage(), Toast.LENGTH_LONG).show();
+                if (imageUri != null) {
+                    String internalPath = copyUriToInternalStorage(imageUri);
+                    if (internalPath != null) {
+                        imageViewButton.setImageURI(Uri.fromFile(new File(internalPath)));
+                        preferences.edit().putString("image_path", internalPath).apply();
+                        Toast.makeText(this, "Timetable Saved internally!", Toast.LENGTH_SHORT).show();
                     }
-
                 }
             }
-
         });
+
         selectImageButton.setOnClickListener(v -> {
-
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("image/*");
-
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-
             imagePickerlauncher.launch(intent);
         });
+
+        deleteImageButton.setOnClickListener(v -> {
+            String path = preferences.getString("image_path", "");
+            File file = new File(path);
+            if (file.exists()) file.delete();
+            preferences.edit().remove("image_path").apply();
+            imageViewButton.setImageDrawable(null); // Clears the image
+            Toast.makeText(this, "Timetable Deleted", Toast.LENGTH_SHORT).show();
+        });
+
         loadSavedImage();
-
-
     }
 
-    private void loadSavedImage(){
-        String savedUri = preferences.getString("image_uri", null);
+    private String copyUriToInternalStorage(Uri uri) {
+        try {
+            InputStream in = getContentResolver().openInputStream(uri);
+            File file = new File(getFilesDir(), "timetable_image.jpg");
+            FileOutputStream out = new FileOutputStream(file);
+            byte[] buffer = new byte[1024];
+            int read;
+            while((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            in.close(); out.close();
+            return file.getAbsolutePath();
+        } catch (Exception e) { return null; }
+    }
 
-        if (savedUri != null){
-            try {
-                Uri imageUri = Uri.parse(savedUri);
-                imageViewButton.setImageURI(imageUri);
-            } catch (Exception e) {
-                Toast.makeText(this, "Could not load saved photo", Toast.LENGTH_SHORT).show();
-            }
+    private void loadSavedImage() {
+        String savedPath = preferences.getString("image_path", null);
+        if (savedPath != null) {
+            File file = new File(savedPath);
+            if (file.exists()) imageViewButton.setImageURI(Uri.fromFile(file));
         }
     }
 }

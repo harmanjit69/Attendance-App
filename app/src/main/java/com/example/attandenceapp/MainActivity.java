@@ -1,6 +1,7 @@
 package com.example.attandenceapp;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        ThemeManager.applyTheme(this);
 
         requestQueue = Volley.newRequestQueue(this);
 
@@ -216,6 +218,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("VERIFIED_COOKIES", verifiedCookies);
 
                 runOnUiThread(() -> {
+                    SharedPreferences loginPrefs = getSharedPreferences("login_data", MODE_PRIVATE);
+                    loginPrefs.edit().putString("roll", rollNo).putString("pass", password).apply();
                     Intent intent = new Intent(this, Selection.class);
                     intent.putExtra("cookies", verifiedCookies);
                     startActivity(intent);

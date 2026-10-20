@@ -16,6 +16,7 @@ public class AboutMe extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_about_me);
+        ThemeManager.applyTheme(this);
 
         TextView textView = findViewById(R.id.textView2);
 

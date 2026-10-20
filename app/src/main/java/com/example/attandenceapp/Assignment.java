@@ -43,6 +43,7 @@ public class Assignment extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_assignment);
+        ThemeManager.applyTheme(this);
 
         container = findViewById(R.id.container);
         scrollView = findViewById(R.id.scrollView);

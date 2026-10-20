@@ -19,6 +19,7 @@ public class Selection extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_selection);
+        ThemeManager.applyTheme(this);
         Button b1 = findViewById(R.id.b1);
         Button b2 = findViewById(R.id.b2);
 

@@ -25,4 +25,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="DELETE" />
+    <Button
+        android:id="@+id/deleteImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete Timetable"
+        app:layout_constraintTop_toBottomOf="@id/imageViewButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
 </LinearLayout>
